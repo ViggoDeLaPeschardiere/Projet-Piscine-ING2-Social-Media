@@ -1,0 +1,117 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+nav {
+    background-color: #333; 
+}
+
+nav ul {
+    list-style-type: none; 
+    text-align: center; 
+}
+
+nav ul li {
+    display: inline; 
+    margin: 0 10px;
+}
+
+nav ul li a {
+    color: #fff; 
+    text-decoration: none;
+    padding: 10px 15px;
+    display: inline-block; 
+    transition: all 0.3s ease;
+}
+
+nav ul li a:hover {
+    background-color: #555;
+}
+
+nav ul li a.active {
+    background-color: #555; 
+}
+
+header {
+    background-color: #333; 
+    padding: 20px; 
+    color: #fff; 
+    text-align: center; 
+}
+
+main {
+    max-width: 1200px; 
+}
+
+form {
+    margin-bottom: 20px; 
+}
+
+input[type="text"],
+input[type="password"],
+button[type="submit"] {
+    padding: 10px; 
+    margin-right: 10px; 
+}
+
+button[type="submit"] {
+    background-color: #333; 
+    color: #fff; 
+    border: none; 
+    cursor: pointer; 
+}
+
+button[type="submit"]:hover {
+    background-color: #555; 
+}
+
+.tweet {
+    background-color: #fff; 
+    padding: 10px;
+    margin-bottom: 10px; 
+    border: 1px solid #ccc;
+}
+
+.tweet h2 {
+    margin-bottom: 5px; 
+}
+
+footer {
+    background-color: #333; 
+    padding: 20px; 
+    color: #fff; 
+    text-align: center; 
+}
+
+.form {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.main-content {
+    display: flex;
+}
+
+.left-column {
+    width: 70vw;
+    margin-left: 20px;
+    margin-right: 140px;
+}
+
+.right-column {
+    margin-left: 10px;
+    width: 20vw;
+}
+
+
+.extra-left-column{
+    margin-right: 140px;
+    width: 20vw;
+}
+
+.emplois{
+    text-align: center;
+}
