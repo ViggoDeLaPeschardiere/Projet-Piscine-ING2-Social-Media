@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Votre Profil</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <?php require('header.php'); ?>
+    </header>
+    <main>
+        <h1>Complétez votre profil</h1>
+
+        <form action="vous.php" method="POST">
+            <h2>Informations Personnelles</h2>
+            <label for="nom">Nom</label>
+            <input type="text" name="nom" id="nom" value="<?php echo htmlspecialchars($user['Nom']); ?>">
+
+            <label for="prenom">Prénom</label>
+            <input type="text" name="prenom" id="prenom" value="<?php echo htmlspecialchars($user['Prénom']); ?>">
+
+            <label for="photo_de_profil">Photo de profil</label>
+            <input type="text" name="photo_de_profil" id="photo_de_profil" value="<?php echo htmlspecialchars($user['Photo_de_profil']); ?>">
+
+            <label for="image_de_fond">Image de fond</label>
+            <input type="text" name="image_de_fond" id="image_de_fond" value="<?php echo htmlspecialchars($user['Image_de_fond']); ?>">
+
+            <label for="description">Description</label>
+            <textarea name="description" id="description"><?php echo htmlspecialchars($user['Description']); ?></textarea>
+
+            <label for="competences">Compétences</label>
+            <textarea name="competences" id="competences"><?php echo htmlspecialchars($user['Compétences']); ?></textarea>
+
+            <label for="humeur">Humeur</label>
+            <input type="text" name="humeur" id="humeur" value="<?php echo htmlspecialchars($user['Humeur']); ?>">
+
+            <button type="submit" name="update_info">Mettre à jour</button>
+        </form>
+
+        <h2>Ajouter Formation</h2>
+        <form action="vous.php" method="POST">
+            <label for="titre_formation">Titre</label>
+            <input type="text" name="titre_formation" id="titre_formation">
+
+            <label for="etablissement">Etablissement</label>
+            <input type="text" name="etablissement" id="etablissement">
+
+            <label for="date_debut_formation">Date Début</label>
+            <input type="date" name="date_debut_formation" id="date_debut_formation">
+
+            <label for="date_fin_formation">Date Fin</label>
+            <input type="date" name="date_fin_formation" id="date_fin_formation">
+
+            <label for="description_formation">Description</label>
+            <textarea name="description_formation" id="description_formation"></textarea>
+
+            <button type="submit" name="add_formation">Ajouter Formation</button>
+        </form>
+
+        <h2>Ajouter Projet</h2>
+        <form action="vous.php" method="POST">
+            <label for="titre_projet">Titre</label>
+            <input type="text" name="titre_projet" id="titre_projet">
+
+            <label for="description_projet">Description</label>
+            <textarea name="description_projet" id="description_projet"></textarea>
+
+            <label for="date_debut_projet">Date Début</label>
+            <input type="date" name="date_debut_projet" id="date_debut_projet">
+
+            <label for="date_fin_projet">Date Fin</label>
+            <input type="date" name="date_fin_projet" id="date_fin_projet">
+
+            <label for="lieu">Lieu</label>
+            <input type="text" name="lieu" id="lieu">
+
+            <label for="type_projet">Type</label>
+            <select name="type_projet" id="type_projet">
+                <option value="Ecole">Ecole</option>
+                <option value="Entreprise">Entreprise</option>
+                <option value="Erasmus">Erasmus</option>
+                <option value="Autre">Autre</option>
+            </select>
+
+            <button type="submit" name="add_projet">Ajouter Projet</button>
+        </form>
+
+        <h2>Vos Informations</h2>
+        <p><strong>Nom :</strong> <?php echo htmlspecialchars($user['Nom']); ?></p>
+        <p><strong>Prénom :</strong> <?php echo htmlspecialchars($user['Prénom']); ?></p>
+        <p><strong>Photo de profil :</strong> <img src="<?php echo htmlspecialchars($user['Photo_de_profil']); ?>" alt="Photo de profil"></p>
+        <p><strong>Image de fond :</strong> <img src="<?php echo htmlspecialchars($user['Image_de_fond']); ?>" alt="Image de fond"></p>
+        <p><strong>Description :</strong> <?php echo htmlspecialchars($user['Description']); ?></p>
+        <p><strong>Compétences :</strong> <?php echo htmlspecialchars($user['Compétences']); ?></p>
+        <p><strong>Humeur :</strong> <?php echo htmlspecialchars($user['Humeur']); ?></p>
+
+        <h2>Vos Formations</h2>
+        <?php
+        $sql = "SELECT * FROM Formation WHERE ID_Utilisateur = :ID_Utilisateur";
+        $stmt = $database->prepare($sql);
+        $stmt->bindParam(':ID_Utilisateur', $ID_Utilisateur, PDO::PARAM_INT);
+        $stmt->execute();
+        $formations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($formations as $formation) {
+            echo '<div>';
+            echo '<p><strong>Titre :</strong> ' . htmlspecialchars($formation['Titre']) . '</p>';
+            echo '<p><strong>Etablissement :</strong> ' . htmlspecialchars($formation['Etablissement']) . '</p>';
+            echo '<p><strong>Date Début :</strong> ' . htmlspecialchars($formation['Date_Début']) . '</p>';
+            echo '<p><strong>Date Fin :</strong> ' . htmlspecialchars($formation['Date_Fin']) . '</p>';
+            echo '<p><strong>Description :</strong> ' . htmlspecialchars($formation['Description']) . '</p>';
+            echo '</div>';
+        }
+        ?>
+
+        <h2>Vos Projets</h2>
+        <?php
+        $sql = "SELECT * FROM Projet WHERE ID_Utilisateur = :ID_Utilisateur";
+        $stmt = $database->prepare($sql);
+        $stmt->bindParam(':ID_Utilisateur', $ID_Utilisateur, PDO::PARAM_INT);
+        $stmt->execute();
+        $projets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($projets as $projet) {
+            echo '<div>';
+            echo '<p><strong>Titre :</strong> ' . htmlspecialchars($projet['Titre']) . '</p>';
+            echo '<p><strong>Description :</strong> ' . htmlspecialchars($projet['Description']) . '</p>';
+            echo '<p><strong>Date Début :</strong> ' . htmlspecialchars($projet['Date_Début']) . '</p>';
+            echo '<p><strong>Date Fin :</strong> ' . htmlspecialchars($projet['Date_Fin']) . '</p>';
+            echo '<p><strong>Lieu :</strong> ' . htmlspecialchars($projet['Lieu']) . '</p>';
+            echo '<p><strong>Type :</strong> ' . htmlspecialchars($projet['Type']) . '</p>';
+            echo '</div>';
+        }
+        ?>
+      
+    </main>
+    <footer></footer>
+</body>
+</html>
+
