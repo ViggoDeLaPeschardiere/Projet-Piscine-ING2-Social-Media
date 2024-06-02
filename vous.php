@@ -1,195 +1,322 @@
 <?php
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+session_start();
 
-require 'database.php'; // Connexion à la base de données
+$conn = mysqli_connect('localhost', 'root', '', 'twitterlike');
 
-// Vérifier si l'utilisateur est connecté
-if (!isset($_SESSION['ID_Utilisateur'])) {
-    header("Location: login.php");
+if (!$conn) {
+    die("Connection failed: " . mysqli_connect_error());
+}
+
+// Vérifie si l'utilisateur est connecté
+if (!isset($_SESSION['connection']['state']) || $_SESSION['connection']['state'] == false) {
+    header('Location: logine.php');
     exit();
 }
 
-$user_id = $_SESSION['ID_Utilisateur'];
+// Récupère les informations de l'utilisateur connecté
+$ID_Utilisateur = $_SESSION['connection']['ID_Utilisateur'];
+$sql = "SELECT * FROM utilisateur WHERE ID_Utilisateur = '$ID_Utilisateur'";
+$result = mysqli_query($conn, $sql);
 
-// Récupérer les informations de l'utilisateur
-$query = $database->prepare("SELECT * FROM Utilisateur WHERE ID_Utilisateur = ?");
-$query->execute([$user_id]);
-$user = $query->fetch(PDO::FETCH_ASSOC);
+if ($result && mysqli_num_rows($result) > 0) {
+    $user = mysqli_fetch_assoc($result);
+} else {
+    // Gérer le cas où l'utilisateur n'est pas trouvé
+    // Peut-être rediriger l'utilisateur vers une page d'erreur
+    echo "Erreur: Utilisateur non trouvé.";
+    exit();
+}
 
-$query = $database->prepare("SELECT * FROM Formation WHERE ID_Utilisateur = ?");
-$query->execute([$user_id]);
-$formations = $query->fetchAll(PDO::FETCH_ASSOC);
+// Gérer l'ajout ou la mise à jour des informations de l'utilisateur
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_info'])) {
+    $nom = $_POST['nom'];
+    $prenom = $_POST['prenom'];
+    $photo_de_profil = $_POST['photo_de_profil'];
+    $image_de_fond = $_POST['image_de_fond'];
+    $description = $_POST['description'];
+    $competences = $_POST['competences'];
+    $humeur = $_POST['humeur'];
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['update_user'])) {
-        // Mettre à jour les informations de l'utilisateur
-        $email = $_POST['email'];
-        $pseudo = $_POST['pseudo'];
-        $nom = $_POST['nom'];
-        $prenom = $_POST['prenom'];
-        $description = $_POST['description'];
-        $competences = $_POST['competences'];
-        $humeur = $_POST['humeur'];
+    $sql = "UPDATE utilisateur SET 
+            Nom = '$nom', 
+            Prenom = '$prenom', 
+            Photo_de_profil = '$photo_de_profil', 
+            Image_de_fond = '$image_de_fond', 
+            Description = '$description', 
+            Competences = '$competences', 
+            Humeur = '$humeur' 
+            WHERE ID_Utilisateur = '$ID_Utilisateur'";
 
-        if (isset($_FILES['photo_profil'])) {
-            $allowed = ['jpg', 'jpeg', 'png', 'gif'];
-            $fileName = $_FILES['photo_profil']['name'];
-            $fileSize = $_FILES['photo_profil']['size'];
-            $fileTmp = $_FILES['photo_profil']['tmp_name'];
-            $fileType = $_FILES['photo_profil']['type'];
-            $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-            echo "Nom du fichier : $fileName<br>";
-            echo "Taille du fichier : $fileSize<br>";
-            echo "Extension du fichier : $fileExt<br>";
-            
-            if (in_array($fileExt, $allowed) && $fileSize <= 2097152) { // 2MB limit
-                $uploadDir = 'uploads/';
-                if (!is_dir($uploadDir)) {
-                    mkdir($uploadDir, 0755, true);
-                }
-                $filePath = $uploadDir . uniqid('', true) . '.' . $fileExt;
-                if (move_uploaded_file($fileTmp, $filePath)) {
-                    echo "fichier téléchargé.";
-                } else {
-                    die('Erreur : le fichier n\'a pas pu être téléchargé.');
-                }
-            } else {
-                die('Erreur : fichier non autorisé ou trop volumineux.');
-            }
-            $query = $database->prepare("UPDATE Utilisateur SET Email = ?, Pseudo = ?, Nom = ?, Prénom = ?, Description = ?, Compétences = ?, Humeur = ?,Photo_de_profil = ?  WHERE ID_Utilisateur = ?");
-            if ($query->execute([$email, $pseudo, $nom, $prenom, $description, $competences, $humeur, $filePath, $user_id,])) {
-                echo "Profil mis à jour avec succès.";
-            } else {
-                die('Erreur lors de la mise à jour du profil.');
-            }
-        }     
-        //header("Location: vous.php");
-        //exit();
-
-
-
-    } elseif (isset($_POST['add_formation'])) {
-        // Ajouter une nouvelle formation
-        $titre = $_POST['titre'];
-        $etablissement = $_POST['etablissement'];
-        $date_debut = $_POST['date_debut'];
-        $date_fin = $_POST['date_fin'];
-        $description_formation = $_POST['description_formation'];
-
-        $query = $database->prepare("INSERT INTO Formation (ID_Utilisateur, Titre, Etablissement, Date_Début, Date_Fin, Description) VALUES (?, ?, ?, ?, ?, ?)");
-        $query->execute([$user_id, $titre, $etablissement, $date_debut, $date_fin, $description_formation]);
-        
-        header("Location: vous.php");
+    if (mysqli_query($conn, $sql)) {
+        header('Location: vous.php');
         exit();
-
-
-    } elseif (isset($_POST['update_formation'])) {
-        // Mettre à jour une formation existante
-        $id_formation = $_POST['id_formation'];
-        $titre = $_POST['titre'];
-        $etablissement = $_POST['etablissement'];
-        $date_debut = $_POST['date_debut'];
-        $date_fin = $_POST['date_fin'];
-        $description_formation = $_POST['description_formation'];
-
-        $query = $database->prepare("UPDATE Formation SET Titre = ?, Etablissement = ?, Date_Début = ?, Date_Fin = ?, Description = ? WHERE ID_Formation = ? AND ID_Utilisateur = ?");
-        $query->execute([$titre, $etablissement, $date_debut, $date_fin, $description_formation, $id_formation, $user_id]);
-        
-        header("Location: vous.php");
-        exit();
+    } else {
+        echo "Error: " . $sql . "<br>" . mysqli_error($conn);
     }
 }
-?>
 
+// Gérer l'ajout de projet
+
+// Gérer l'ajout de projet
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_projet'])) {
+    $id_Projet = $_POST['id_projet'];
+    $titre = $_POST['titre_projet'];
+    $description = $_POST['description_projet'];
+    $date_debut = $_POST['date_debut_projet'];
+    $date_fin = $_POST['date_fin_projet'];
+    $lieu = $_POST['lieu'];
+    $type_projet = $_POST['type_projet'];
+
+    $sql = "INSERT INTO Projet (ID_Projet, ID_Utilisateur, Titre, Description, Date_Debut, Date_Fin, Lieu, Type) 
+            VALUES ('$id_Projet', '$ID_Utilisateur', '$titre', '$description', '$date_debut', '$date_fin', '$lieu', '$type_projet')";
+
+    if (mysqli_query($conn, $sql)) {
+        header('Location: vous.php');
+        exit();
+    } else {
+        echo "Error: " . $sql . "<br>" . mysqli_error($conn);
+    }
+}
+
+
+
+// Gérer l'ajout de formation
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_formation'])) {
+    $id_formation = $_POST['id_formation'];
+    $titre = $_POST['titre_formation'];
+    $etablissement = $_POST['etablissement'];
+    $date_debut = $_POST['date_debut_formation'];
+    $date_fin = $_POST['date_fin_formation'];
+    $description = $_POST['description_formation'];
+
+    $sql = "INSERT INTO Formation (ID_Formation, ID_Utilisateur, Titre, Etablissement, Date_Debut, Date_Fin, Description) 
+            VALUES ('$id_formation', '$ID_Utilisateur', '$titre', '$etablissement', '$date_debut', '$date_fin', '$description')";
+
+    if (mysqli_query($conn, $sql)) {
+        header('Location: vous.php');
+        exit();
+    } else {
+        echo "Error: " . $sql . "<br>" . mysqli_error($conn);
+    }
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["generate_cv"])) {
+    // Récupérez les informations nécessaires depuis $_POST ou $_SESSION
+    $nom = htmlspecialchars($user['Nom']);
+    $prenom = htmlspecialchars($user['Prenom']);
+    $competences = htmlspecialchars($user['Competences']);
+    $description = htmlspecialchars($user['Description']);
+
+    // Récupérez les informations sur les formations de la base de données
+    $sql = "SELECT * FROM Formation WHERE ID_Utilisateur = '$ID_Utilisateur'";
+    $result = mysqli_query($conn, $sql);
+    $formations = [];
+    if ($result && mysqli_num_rows($result) > 0) {
+        while ($formation = mysqli_fetch_assoc($result)) {
+            $formations[] = $formation;
+        }
+    }
+
+    // Récupérez les informations sur les projets de la base de données
+    $sql = "SELECT * FROM Projet WHERE ID_Utilisateur = '$ID_Utilisateur'";
+    $result = mysqli_query($conn, $sql);
+    $projets = [];
+    if ($result && mysqli_num_rows($result) > 0) {
+        while ($projet = mysqli_fetch_assoc($result)) {
+            $projets[] = $projet;
+        }
+    }
+
+    // Générez le contenu du CV au format souhaité
+    $cv_content = "<h1>CV de $prenom $nom</h1>";
+    $cv_content .= "<h2>Competences :</h2>";
+    $cv_content .= "<p>$competences</p>";
+    $cv_content .= "<h2>Description :</h2>";
+    $cv_content .= "<p>$description</p>";
+
+    if (!empty($formations)) {
+        $cv_content .= "<h2>Formations :</h2>";
+        foreach ($formations as $formation) {
+            $cv_content .= "<p><strong>Titre :</strong> " . htmlspecialchars($formation['Titre']) . "</p>";
+            $cv_content .= "<p><strong>Etablissement :</strong> " . htmlspecialchars($formation['Etablissement']) . "</p>";
+            $cv_content .= "<p><strong>Date Debut :</strong> " . htmlspecialchars($formation['Date_Debut']) . "</p>";
+            $cv_content .= "<p><strong>Date Fin :</strong> " . htmlspecialchars($formation['Date_Fin']) . "</p>";
+            $cv_content .= "<p><strong>Description :</strong> " . htmlspecialchars($formation['Description']) . "</p>";
+        }
+    }
+
+    if (!empty($projets)) {
+        $cv_content .= "<h2>Projets :</h2>";
+        foreach ($projets as $projet) {
+            $cv_content .= "<p><strong>Titre :</strong> " . htmlspecialchars($projet['Titre']) . "</p>";
+            $cv_content .= "<p><strong>Description :</strong> " . htmlspecialchars($projet['Description']) . "</p>";
+            $cv_content .= "<p><strong>Date Debut :</strong> " . htmlspecialchars($projet['Date_Debut']) . "</p>";
+            $cv_content .= "<p><strong>Date Fin :</strong> " . htmlspecialchars($projet['Date_Fin']) . "</p>";
+            $cv_content .= "<p><strong>Lieu :</strong> " . htmlspecialchars($projet['Lieu']) . "</p>";
+            $cv_content .= "<p><strong>Type :</strong> " . htmlspecialchars($projet['Type']) . "</p>";
+        }
+    }
+
+    echo $cv_content;
+}
+
+
+
+
+
+?>
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Votre Profil</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Votre Profil</h1>
-    <form method="POST" action="vous.php">
-        <input type="hidden" name="update_user" value="1">
-        <label for="email">Email :</label>
-        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($user['Email']); ?>" required><br>
+    <header>
+        <?php require('header.php'); ?>
+    </header>
+    <main>
+            <h1>Complétez votre profil</h1>
 
-        <label for="pseudo">Pseudo :</label>
-        <input type="text" id="pseudo" name="pseudo" value="<?php echo htmlspecialchars($user['Pseudo']); ?>" required><br>
+        <form action="vous.php" method="POST">
+            <h2>Informations Personnelles</h2>
+            <label for="nom">Nom</label>
+            <input type="text" name="nom" id="nom" value="<?php echo htmlspecialchars($user['Nom']); ?>">
 
-        <label for="nom">Nom :</label>
-        <input type="text" id="nom" name="nom" value="<?php echo htmlspecialchars($user['Nom']); ?>" required><br>
+            <label for="prenom">Prenom</label>
+            <input type="text" name="prenom" id="prenom" value="<?php echo htmlspecialchars($user['Prenom']); ?>">
 
-        <label for="prenom">Prénom :</label>
-        <input type="text" id="prenom" name="prenom" value="<?php echo htmlspecialchars($user['Prénom']); ?>" required><br>
+            <label for="photo_de_profil">Photo de profil</label>
+            <input type="text" name="photo_de_profil" id="photo_de_profil" value="<?php echo htmlspecialchars($user['Photo_de_profil']); ?>">
 
-        <label for="description">Description :</label>
-        <textarea id="description" name="description"><?php echo htmlspecialchars($user['Description']); ?></textarea><br>
+            <label for="image_de_fond">Image de fond</label>
+            <input type="text" name="image_de_fond" id="image_de_fond" value="<?php echo htmlspecialchars($user['Image_de_fond']); ?>">
 
-        <label for="competences">Compétences :</label>
-        <textarea id="competences" name="competences"><?php echo htmlspecialchars($user['Compétences']); ?></textarea><br>
+            <label for="description">Description</label>
+            <textarea name="description" id="description"><?php echo htmlspecialchars($user['Description']); ?></textarea>
 
-        <label for="humeur">Humeur :</label>
-        <input type="text" id="humeur" name="humeur" value="<?php echo htmlspecialchars($user['Humeur']); ?>"><br>
+            <label for="competences">Competences</label>
+            <textarea name="competences" id="competences"><?php echo htmlspecialchars($user['Competences']); ?></textarea>
 
-        <label for="photo_profil">Photo de profil :</label>
-        <input type="file" id="photo_profil" name="photo_profil"><br>
+            <label for="humeur">Humeur</label>
+            <input type="text" name="humeur" id="humeur" value="<?php echo htmlspecialchars($user['Humeur']); ?>">
 
-        <input type="submit" value="Mettre à jour">
-    </form>
+            <button type="submit" name="update_info">Mettre à jour</button>
+        </form>
 
-    <h2>Ajouter une formation</h2>
-    <form method="POST" action="vous.php">
-        <input type="hidden" name="add_formation" value="1">
-        <label for="titre">Titre :</label>
-        <input type="text" id="titre" name="titre" required><br>
+        <h2>Ajouter Formation</h2>
+        <form action="vous.php" method="POST">
+            <label for="id_formation">ID Formation</label>
+            <input type="text" name="id_formation" id="id_formation">
 
-        <label for="etablissement">Etablissement :</label>
-        <input type="text" id="etablissement" name="etablissement" required><br>
+            <label for="titre_formation">Titre</label>
+            <input type="text" name="titre_formation" id="titre_formation">
 
-        <label for="date_debut">Date de début :</label>
-        <input type="date" id="date_debut" name="date_debut" required><br>
+            <label for="etablissement">Etablissement</label>
+            <input type="text" name="etablissement" id="etablissement">
 
-        <label for="date_fin">Date de fin :</label>
-        <input type="date" id="date_fin" name="date_fin" required><br>
+            <label for="date_debut_formation">Date Debut</label>
+            <input type="date" name="date_debut_formation" id="date_debut_formation">
 
-        <label for="description_formation">Description :</label>
-        <textarea id="description_formation" name="description_formation"></textarea><br>
+            <label for="date_fin_formation">Date Fin</label>
+            <input type="date" name="date_fin_formation" id="date_fin_formation">
 
-        <input type="submit" value="Ajouter">
-    </form>
+            <label for="description_formation">Description</label>
+            <textarea name="description_formation" id="description_formation"></textarea>
 
-    <h2>Vos formations</h2>
-    <ul>
-        <?php foreach ($formations as $formation): ?>
-            <li>
-                <strong><?php echo htmlspecialchars($formation['Titre']); ?></strong><br>
-                <?php echo htmlspecialchars($formation['Etablissement']); ?><br>
-                Du <?php echo htmlspecialchars($formation['Date_Début']); ?> au <?php echo htmlspecialchars($formation['Date_Fin']); ?><br>
-                <?php echo htmlspecialchars($formation['Description']); ?><br>
-                <form method="POST" action="vous.php">
-                    <input type="hidden" name="update_formation" value="1">
-                    <input type="hidden" name="id_formation" value="<?php echo htmlspecialchars($formation['ID_Formation']); ?>">
-                    <label for="titre">Titre :</label>
-                    <input type="text" id="titre" name="titre" value="<?php echo htmlspecialchars($formation['Titre']); ?>" required><br>
-                    
-                    <label for="etablissement">Etablissement :</label>
-                    <input type="text" id="etablissement" name="etablissement" value="<?php echo htmlspecialchars($formation['Etablissement']); ?>" required><br>
-                    
-                    <label for="date_debut">Date de début :</label>
-                    <input type="date" id="date_debut" name="date_debut" value="<?php echo htmlspecialchars($formation['Date_Début']); ?>" required><br>
-                    
-                    <label for="date_fin">Date de fin :</label>
-                    <input type="date" id="date_fin" name="date_fin" value="<?php echo htmlspecialchars($formation['Date_Fin']); ?>" required><br>
-                    
-                    <label for="description_formation">Description :</label>
-                    <textarea id="description_formation" name="description_formation"><?php echo htmlspecialchars($formation['Description']); ?></textarea><br>
-                    
-                    <input type="submit" value="Mettre à jour">
-                </form>
-            </li>
-        <?php endforeach; ?>
-    </ul>
+            <button type="submit" name="add_formation">Ajouter Formation</button>
+        </form>
+
+        <h2>Ajouter Projet</h2>
+        <form action="vous.php" method="POST">
+            <label for="id_projet">ID Projet</label>
+            <input type="text" name="id_projet" id="id_projet">
+
+            <label for="titre_projet">Titre</label>
+            <input type="text" name="titre_projet" id="titre_projet">
+
+            <label for="description_projet">Description</label>
+            <textarea name="description_projet" id="description_projet"></textarea>
+
+            <label for="date_debut_projet">Date Debut</label>
+            <input type="date" name="date_debut_projet" id="date_debut_projet">
+
+            <label for="date_fin_projet">Date Fin</label>
+            <input type="date" name="date_fin_projet" id="date_fin_projet">
+
+            <label for="lieu">Lieu</label>
+            <input type="text" name="lieu" id="lieu">
+
+            <label for="type_projet">Type</label>
+            <select name="type_projet" id="type_projet">
+                <option value="Ecole">Ecole</option>
+                <option value="Entreprise">Entreprise</option>
+                <option value="Erasmus">Erasmus</option>
+                <option value="Autre">Autre</option>
+            </select>
+
+            <button type="submit" name="add_projet">Ajouter Projet</button>
+        </form>
+
+        <h2>Vos Informations</h2>
+        <p><strong>Nom :</strong> <?php echo htmlspecialchars($user['Nom']); ?></p>
+        <p><strong>Prenom :</strong> <?php echo htmlspecialchars($user['Prenom']); ?></p>
+        <p><strong>Photo de profil :</strong> <img src="<?php echo htmlspecialchars($user['Photo_de_profil']); ?>" alt="Photo de profil"></p>
+        <p><strong>Image de fond :</strong> <img src="<?php echo htmlspecialchars($user['Image_de_fond']); ?>" alt="Image de fond"></p>
+        <p><strong>Description :</strong> <?php echo htmlspecialchars($user['Description']); ?></p>
+        <p><strong>Competences :</strong> <?php echo htmlspecialchars($user['Competences']); ?></p>
+        <p><strong>Humeur :</strong> <?php echo htmlspecialchars($user['Humeur']); ?></p>
+        <h2>Vos Formations</h2>
+       <?php
+       $sql = "SELECT * FROM Formation WHERE ID_Utilisateur = '$ID_Utilisateur'";
+       $result = mysqli_query($conn, $sql);
+
+       if (mysqli_num_rows($result) > 0) {
+           while ($formation = mysqli_fetch_assoc($result)) {
+               echo '<div>';
+               echo '<p><strong>Titre :</strong> ' . htmlspecialchars($formation['Titre']) . '</p>';
+               echo '<p><strong>Etablissement :</strong> ' . htmlspecialchars($formation['Etablissement']) . '</p>';
+               echo '<p><strong>Date Debut :</strong> ' . htmlspecialchars($formation['Date_Debut']) . '</p>';
+               echo '<p><strong>Date Fin :</strong> ' . htmlspecialchars($formation['Date_Fin']) . '</p>';
+               echo '<p><strong>Description :</strong> ' . htmlspecialchars($formation['Description']) . '</p>';
+               echo '</div>';
+           }
+       } else {
+           echo "Aucune formation trouvée.";
+       }
+       ?>
+
+       <h2>Vos Projets</h2>
+       <?php
+       $sql = "SELECT * FROM Projet WHERE ID_Utilisateur = '$ID_Utilisateur'";
+       $result = mysqli_query($conn, $sql);
+
+       if (mysqli_num_rows($result) > 0) {
+           while ($projet = mysqli_fetch_assoc($result)) {
+               echo '<div>';
+               echo '<p><strong>Titre :</strong> ' . htmlspecialchars($projet['Titre']) . '</p>';
+               echo '<p><strong>Description :</strong> ' . htmlspecialchars($projet['Description']) . '</p>';
+               echo '<p><strong>Date Debut :</strong> ' . htmlspecialchars($projet['Date_Debut']) . '</p>';
+               echo '<p><strong>Date Fin :</strong> ' . htmlspecialchars($projet['Date_Fin']) . '</p>';
+               echo '<p><strong>Lieu :</strong> ' . htmlspecialchars($projet['Lieu']) . '</p>';
+               echo '<p><strong>Type :</strong> ' . htmlspecialchars($projet['Type']) . '</p>';
+               echo '</div>';
+           }
+       } else {
+           echo "Aucun projet trouvé.";
+       }
+       ?>
+       <form action="vous.php" method="POST">
+           <button type="submit" name="generate_cv">Générer CV</button>
+       </form>
+   </main>
+   <footer></footer>
 </body>
 </html>
+

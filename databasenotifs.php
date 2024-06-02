@@ -12,11 +12,11 @@ try {
 
 try {
     // Récupération des emplois
-    $requete = $database->prepare("SELECT * FROM Emploi ORDER BY ID_Emploi DESC");
+    $requete = $database->prepare("SELECT * FROM notification ORDER BY ID_Notification DESC");
     $requete->execute();
-    $emplois = $requete->fetchAll(PDO::FETCH_ASSOC);
-    $_SESSION['emplois'] = $emplois;
-} catch (PDOException $e) {
+    $notifs = $requete->fetchAll(PDO::FETCH_ASSOC);
+    $_SESSION['notifs'] = $notifs;
+} catch (PDOException $e) { 
     echo 'Erreur SQL: ' . $e->getMessage();
 }
 ?>

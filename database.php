@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 
 $connection = isset($_SESSION['connection']) ? $_SESSION['connection'] : ['state' => false, 'ID_Utilisateur' => 0];
 $messageerreur = isset($_SESSION['messageerreur'])? $_SESSION['messageerreur'] : '.';

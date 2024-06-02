@@ -10,7 +10,7 @@ catch(PDOException $e){
     die('Site indisponible');
 }
 
-$requete = $database->prepare("SELECT ID_Publication,Contenu,ID_Utilisateur FROM publication");
+$requete = $database->prepare("SELECT ID_Publication, Contenu, ID_Utilisateur, Titre, URL FROM publication ORDER BY ID_Publication DESC ");
 $requete->execute();
 
 $tweets = $requete->fetchAll(PDO::FETCH_ASSOC);
@@ -26,9 +26,11 @@ if(isset($_POST['form']) && $_POST['form'] =='publication'){
     if($_POST['publication'] != ''){
         $tweet = [
             'Contenu' => $_POST['publication'],
-            'ID_Utilisateur' => $_SESSION['connection']['ID_Utilisateur']
+            'Titre' => $_POST['titre'],
+            'ID_Utilisateur' => $_SESSION['connection']['ID_Utilisateur'],
+            'URL' => $_POST['url']
         ];
-        $requete = $database->prepare("INSERT INTO publication (Contenu, ID_Utilisateur) VALUES (:Contenu, :ID_Utilisateur)");
+        $requete = $database->prepare("INSERT INTO publication (Contenu, ID_Utilisateur, Titre, URL) VALUES (:Contenu, :ID_Utilisateur, :Titre, :URL)");
         $requete->execute($tweet);
         header('Location: main.php');
         exit();

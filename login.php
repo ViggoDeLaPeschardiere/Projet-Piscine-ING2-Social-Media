@@ -1,52 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <header>
-        <?php require('header.php') ?>
-    </header>
 <?php
-require('database.php');
-$messageerreur = '';
-echo '<form action="login.php" method="POST" class="form">
-    <input type="hidden" name="form" value="login">
-    <div>'. $messageerreur .'</div>
-    <label for="Pseudo">Pseudo</label>
-    <input type="text" name="Pseudo" id="Pseudo">
-    <label for="MotDePasse">Mot de passe</label>
-    <input type="password" name="MotDePasse" id="MotDePasse">
-    <button type="submit">Envoyer</button>';
+session_start();
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "twitterlike";
 
-if($_SERVER['REQUEST_METHOD'] == 'POST' && $_POST['form'] =='login') {
-    if(!empty($_POST['Pseudo']) && !empty($_POST['MotDePasse'])){
-        $loginuser = [
-            'Pseudo' => $_POST['Pseudo'],
-            'MotDePasse' => $_POST['MotDePasse'],
-        ];
+$conn = new mysqli($servername, $username, $password, $dbname);
 
-        foreach($users as $user){
-            if($user['Pseudo'] == $loginuser['Pseudo']){
-                if($user['MotDePasse'] == $loginuser['MotDePasse']){
-                    $connection = [
-                        'ID_Utilisateur' => $user['ID_Utilisateur'],
-                        'state' => true,
-                    ];
-                    $_SESSION['connection'] = $connection;
-                    header('Location: compte.php');
-                    exit();
-                }
-                else{
-                    $messageerreur = 'Mot de passe incorrect';
-                }
-            }
-        }
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $pseudo = $_POST['pseudo'];
+    $mot_de_passe = $_POST['mot_de_passe'];
+
+    $sql = "SELECT * FROM utilisateur WHERE Pseudo='$pseudo' AND MotDePasse='$mot_de_passe'";
+    $result = $conn->query($sql);
+
+    if ($result->num_rows > 0) {
+        $_SESSION['pseudo'] = $pseudo;
+        header("Location: index.php");
+    } else {
+        echo "<script>
+                document.getElementById('errorMessage').innerText = 'Pseudo ou mot de passe invalide.';
+                </script>";
     }
 }
+
+$conn->close();
 ?>
-</body>
-</html>
